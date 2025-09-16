@@ -1,6 +1,6 @@
 export const lobbies = `CREATE TABLE IF NOT EXISTS lobbies (
     id int primary key  auto_increment,
-    lobby_id BIGINT NOT NULL,
+    lobby_id varchar(255) NOT NULL,
     room_id int NOT NULL,
     start_delay INT NOT NULL,
     end_delay INT NOT NULL,

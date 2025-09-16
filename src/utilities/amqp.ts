@@ -24,7 +24,7 @@ export const connect = async (): Promise<void> => {
     if (connected && pubChannel && subChannel) return;
 
     try {
-        rabbitMQLogger.info("⌛️ Connecting to Rabbit-MQ Server", AMQP_CONNECTION_STRING.split("@")[1]);
+        rabbitMQLogger.info("⌛️ Connecting to Rabbit-MQ Server");
         const connection = await amqp.connect(AMQP_CONNECTION_STRING);
 
         rabbitMQLogger.info("✅ Rabbit MQ Connection is ready");
