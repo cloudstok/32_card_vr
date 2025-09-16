@@ -1,12 +1,12 @@
 import { Server as IOServer } from 'socket.io';
 import { insertLobbies } from './lobbies-db';
 import { createLogger } from '../../utilities/logger';
-import { GameResult, LobbyData, LobbyStatusData } from '../../interfaces';
+import { Bonus, GameResult, LobbyData, LobbyStatusData } from '../../interfaces';
 import { setCurrentLobby, settleBet } from '../bets/bets-session';
 import { emitWinnersStats, getNumberPercentages, historyStats } from '../../utilities/helper-function';
 import { play32CardRound } from '../game/game-logic';
 
-const logger = createLogger('Color_Game_2D', 'jsonl');
+const logger = createLogger('32_Card_Game_2D', 'jsonl');
 
 const sleep = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -33,28 +33,32 @@ export const roomResultProbs: { [key: number]: { [key: number]: number } } = {
     104: { 8: 0, 9: 0, 10: 0, 11: 0 }
 };
 
-export const bonuses: { [key: number]: number[] } = {
-    101: [],
-    102: [],
-    103: [],
-    104: []
+export const bonuses: { [key: number]: Bonus } = {
+    101: { num: 0, mult: 0 },
+    102: { num: 0, mult: 0 },
+    103: { num: 0, mult: 0 },
+    104: { num: 0, mult: 0 }
 };
 
-// function updateBonus() {
-//     for (let bonus in bonuses) {
-//         const bonusCount = Math.floor(Math.random() * 4) + 1;
-//         while (bonuses[bonus].length < bonusCount) {
-//             const randomIndex = Math.floor(Math.random() * 21) + 1;
-//             if (!bonuses[bonus].includes(randomIndex)) bonuses[bonus].push(randomIndex);
-//         }
-//     }
-// };
+export const multMapper: { [key: number]: number } = {
+    8: 14,
+    9: 5.7,
+    10: 2.7,
+    11: 1.3
+}
 
-// function resetBonus() {
-//     for (let bonus in bonuses) {
-//         bonuses[bonus].length = 0;
-//     }
-// }
+function updateBonus() {
+    for (let bonus in bonuses) {
+        const bonusSlot = Math.floor(Math.random() * (11 - 8 + 1)) + 8;
+        bonuses[bonus] = { num: bonusSlot, mult: multMapper[bonusSlot] };
+    }
+};
+
+function resetBonus() {
+    for (let bonus in bonuses) {
+        bonuses[bonus] = { num: 0, mult: 0 };
+    }
+}
 
 function updateProbs() {
     for (let room in roomResultProbs) {
@@ -98,7 +102,7 @@ const initLobby = async (io: IOServer, roomId: number): Promise<void> => {
 
     recurLobbyData.status = 1;
     setCurrentLobby(roomId, recurLobbyData);
-    // updateBonus();
+    updateBonus();
 
     for (let y = 1; y <= mid_delay; y++) {
         io.to(`${roomId}`).emit('message', { eventName: 'card', data: { message: `${lobbyId}:${y}:CALCULATING` } })
@@ -108,8 +112,9 @@ const initLobby = async (io: IOServer, roomId: number): Promise<void> => {
     recurLobbyData.status = 2;
     setCurrentLobby(roomId, recurLobbyData);
 
-    // io.to(`${roomId}`).emit('message', { eventName: 'bnDtl', data: bonuses[roomId] });
-    // await sleep(1000);
+    const bonus = bonuses[roomId];
+    io.to(`${roomId}`).emit('message', { eventName: 'bnDtl', data: bonus });
+    await sleep(1000);
 
     const dynamicData: GameResult = {
         cards: { 8: [], 9: [], 10: [], 11: [] },
@@ -178,10 +183,10 @@ const initLobby = async (io: IOServer, roomId: number): Promise<void> => {
 
     if (result.winner) roomWiseHistory[roomId].unshift(result.winner);
     updateProbs();
-    // resetBonus();
+    resetBonus();
 
-    io.to(`${roomId}`).emit('message', { eventName: "history", data: { lobbyId, result: result.winner, roomId, colorProbs: roomResultProbs[roomId] } });
-    logger.info(JSON.stringify(history));
-    await insertLobbies(history);
+    io.to(`${roomId}`).emit('message', { eventName: "history", data: { lobbyId, result: result.winner, roomId, resultProbs: roomResultProbs[roomId] } });
+    logger.info(JSON.stringify({ ...history, bonus }));
+    await insertLobbies({ ...history, bonus });
     return initLobby(io, roomId);
 };

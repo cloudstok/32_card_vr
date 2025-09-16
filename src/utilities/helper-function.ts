@@ -1,7 +1,7 @@
 import { Server, Socket } from 'socket.io';
 import { createLogger } from './logger';
 import { BetEvent, BetResult, SingleBetObject, SingleRoomDetail, TopWinner } from '../interfaces';
-import { bonuses, roomPlayerCount } from '../module/lobbies/lobby-event';
+import { bonuses, multMapper, roomPlayerCount } from '../module/lobbies/lobby-event';
 import { variableConfig } from './load-config';
 import { read } from './db-connection';
 const failedBetLogger = createLogger('failedBets', 'jsonl');
@@ -42,38 +42,28 @@ export const getUserIP = (socket: any): string => {
     return socket.handshake.address || '';
 };
 
-const mults = {
-    clrMult: 2,
-    combMult: 5
+const mults: { [key: number]: number } = {
+    8: 11,
+    9: 4.5,
+    10: 2.2,
+    11: 1
 };
 
-//1- Yelow, 2- White, 3- Pink, 4- Blue, 5- Red, 6- Green
-const numCombs: { [key: string]: number } = {
-    '1-2': 7,
-    '2-3': 8,
-    '1-4': 9,
-    '2-5': 10,
-    '3-6': 11,
-    '4-5': 12,
-    '5-6': 13,
-    '1-3': 14,
-    '1-5': 15,
-    '4-6': 16,
-    '4-2': 17,
-    '3-5': 18,
-    '3-4': 19,
-    '6-2': 20,
-    '6-1': 21
-};
 
 export const getBetResult = (btAmt: number, chip: number, result: number | null, roomId: number): BetResult => {
 
     let mult = 0;
     let status: BetResult["status"] = 'loss';
     let isBonus = false;
+    let bonusData = null;
 
     if (chip == result) {
-        mult = 1.98;
+        if (bonuses[roomId].num == result) {
+            mult = multMapper[chip] + 1;
+            isBonus = true;
+            bonusData = bonuses[roomId];
+        }
+        else mult = mults[chip] + 1;
         status = 'win'
     };
 
@@ -85,7 +75,8 @@ export const getBetResult = (btAmt: number, chip: number, result: number | null,
         winAmt,
         mult,
         status,
-        isBonus
+        isBonus,
+        bonusData
     };
 };
 
@@ -135,8 +126,8 @@ export const historyStats = async () => {
         const filteredData: { [key: number]: number[] } = {};
         historyData.map(e => {
             const { room_id, result } = e;
-            if (!filteredData[room_id]) filteredData[room_id] = [JSON.parse(result).winner];
-            else filteredData[room_id].push(JSON.parse(result).winner);
+            if (!filteredData[room_id]) filteredData[room_id] = [result.winner];
+            else filteredData[room_id].push(result.winner);
         });
         return filteredData;
     } catch (err) {

@@ -103,6 +103,9 @@ export interface LobbyStatusData {
     lobbyId: string;
     status: number;
 }
+export interface Bonus {
+    num: number, mult: number
+}
 
 export interface LobbyInsertData {
     lobbyId: string;
@@ -110,6 +113,7 @@ export interface LobbyInsertData {
     start_delay: number;
     end_delay: number;
     result: GameResult;
+    bonus: Bonus;
     time?: Date;
 };
 
@@ -190,7 +194,8 @@ export type BetResult = {
     winAmt: number;
     mult: number;
     status: 'win' | 'loss';
-    isBonus: Boolean
+    isBonus: Boolean;
+    bonusData: Bonus | null;
 };
 
 export interface UsersBet {

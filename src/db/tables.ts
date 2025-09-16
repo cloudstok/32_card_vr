@@ -5,6 +5,7 @@ export const lobbies = `CREATE TABLE IF NOT EXISTS lobbies (
     start_delay INT NOT NULL,
     end_delay INT NOT NULL,
     result json default null,
+    bonus json default null,
     created_at datetime DEFAULT CURRENT_TIMESTAMP
  );`
 
