@@ -156,7 +156,7 @@ const initLobby = async (io: IOServer, roomId: number): Promise<void> => {
 
     recurLobbyData.status = 3;
     setCurrentLobby(roomId, recurLobbyData);
-    // emitWinnersStats(io);
+    emitWinnersStats(io);
 
     for (let z = 1; z <= end_delay; z++) {
         io.to(`${roomId}`).emit('message', { eventName: "cards", data: { message: `${lobbyId}:${z}:ENDED` } });
@@ -182,6 +182,6 @@ const initLobby = async (io: IOServer, roomId: number): Promise<void> => {
 
     io.to(`${roomId}`).emit('message', { eventName: "history", data: { lobbyId, result: result.winner, roomId, colorProbs: roomResultProbs[roomId] } });
     logger.info(JSON.stringify(history));
-    // await insertLobbies(history);
+    await insertLobbies(history);
     return initLobby(io, roomId);
 };

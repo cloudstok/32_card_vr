@@ -66,33 +66,16 @@ const numCombs: { [key: string]: number } = {
     '6-1': 21
 };
 
-export const getBetResult = (btAmt: number, chip: string, result: number[], roomId: number): BetResult => {
-    const chipNumbers = chip.split('-').map(Number);
-    const isSingle = chipNumbers.length === 1;
+export const getBetResult = (btAmt: number, chip: number, result: number | null, roomId: number): BetResult => {
 
     let mult = 0;
     let status: BetResult["status"] = 'loss';
     let isBonus = false;
 
-    const isWinning =
-        (isSingle && result.includes(chipNumbers[0])) ||
-        (!isSingle && result.includes(chipNumbers[0]) && result.includes(chipNumbers[1]));
-
-    if (isWinning) {
-        mult = isSingle ? mults.clrMult : mults.combMult;
-        status = 'win';
-
-        if (isSingle) {
-            const colorExistence = result.filter(num => num == chipNumbers[0]).length;
-            mult += (colorExistence - 1);
-        }
-
-        const bonusNum = isSingle ? chipNumbers[0] : numCombs[chip];
-        if (bonuses[roomId].includes(bonusNum)) {
-            mult *= 2;
-            isBonus = true;
-        }
-    }
+    if (chip == result) {
+        mult = 1.98;
+        status = 'win'
+    };
 
     const winAmt = btAmt * mult;
 

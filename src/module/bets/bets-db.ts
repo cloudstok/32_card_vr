@@ -2,7 +2,7 @@ import { BetsObject, SettlementData, SingleBetObject } from '../../interfaces';
 import { write } from '../../utilities/db-connection';
 
 const SQL_INSERT_BETS =
-  'INSERT INTO bets (bet_id, lobby_id, user_id, operator_id, bet_amount, user_bets, room_id) VALUES(?,?,?,?,?,?,?)';
+  'INSERT INTO bets (bet_id, lobby_id, room_id, user_id, operator_id, bet_amount, user_bets) VALUES(?,?,?,?,?,?,?)';
 
 export const addSettleBet = async (settlements: SingleBetObject[]): Promise<void> => {
   try {
@@ -14,11 +14,11 @@ export const addSettleBet = async (settlements: SingleBetObject[]): Promise<void
       finalData.push([
         bet_id,
         lobby_id,
+        roomId,
         user_id,
         operatorId,
         betAmount,
         JSON.stringify(userBets),
-        roomId,
         JSON.stringify(result),
         winAmount
       ]);
@@ -29,11 +29,11 @@ export const addSettleBet = async (settlements: SingleBetObject[]): Promise<void
       INSERT INTO settlement (
         bet_id,
         lobby_id,
+        room_id,
         user_id,
         operator_id,
         bet_amount,
         user_bets,
-        room_id,
         result,
         win_amount
       ) VALUES ${placeholders}
@@ -55,11 +55,11 @@ export const insertBets = async (betObj: BetsObject): Promise<void> => {
     await write(SQL_INSERT_BETS, [
       bet_id,
       lobby_id,
+      roomId,
       user_id,
       operatorId,
       totalBetAmt,
       JSON.stringify(userBets),
-      roomId
     ]);
 
     console.info(`Bet placed successfully for user`, user_id);

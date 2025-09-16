@@ -1,7 +1,7 @@
 import { Server as IOServer, Server, Socket } from 'socket.io';
 import { updateBalanceFromAccount } from '../../utilities/common-function';
 import { addSettleBet, insertBets } from './bets-db';
-import { roomColorProbs, roomPlayerCount, roomWiseHistory } from '../lobbies/lobby-event';
+import { roomResultProbs, roomPlayerCount, roomWiseHistory } from '../lobbies/lobby-event';
 import { setCache, getCache, deleteCache } from '../../utilities/redis-connection';
 import { logEventResponse, getUserIP, getBetResult, eventEmitter, getRooms, updateWinners, highestWinners, biggestWinners } from '../../utilities/helper-function';
 import { createLogger } from '../../utilities/logger';
@@ -10,11 +10,11 @@ import { AccountsResult, BetReqData, BetResult, BetsObject, CurrentLobbyData, Fi
 const logger = createLogger('Bets', 'jsonl');
 const settlBetLogger = createLogger('Settlement', 'jsonl');
 const erroredLogger = createLogger('ErrorData', 'plain');
-const numberChips = [1, 2, 3, 4, 5, 6];
 
 const lobbies: Record<string | number, CurrentLobbyData> = {};
 const lobbiesBets: Record<string | number, BetsObject[]> = {};
 const { MAX_CASHOUT, MAX_BET_AMOUNT } = process.env;
+const allowedChips = [8, 9, 10, 11];
 
 export const setCurrentLobby = (roomId: number, data: CurrentLobbyData): void => {
     lobbies[roomId] = data;
@@ -52,7 +52,7 @@ export const joinRoom = async (io: Server, socket: Socket, roomId: string) => {
         };
         setTimeout(() => {
             eventEmitter(socket, 'rmSts', {
-                historyData: roomWiseHistory[Number(roomId)].filter((_, index) => index < 21), colorProbs: Object.values(roomColorProbs[Number(roomId)]),
+                historyData: roomWiseHistory[Number(roomId)], resultProbs: Object.values(roomResultProbs[Number(roomId)]),
                 highWns: highestWinners.map(e => {
                     const highWinsObj = { userId: `${e.userId[0]}***${e.userId.slice(-1)}`, winAmt: e.winAmt, image: e.image };
                     return highWinsObj
@@ -137,8 +137,8 @@ export const roomStats = async (io: Server, socket: Socket) => {
             return;
         };
         eventEmitter(socket, 'rmSts', {
-            historyData: roomWiseHistory[Number(existingRoom)].filter((_, index) => index < 22),
-            colorProbs: Object.values(roomColorProbs[Number(existingRoom)]),
+            historyData: roomWiseHistory[Number(existingRoom)],
+            resultProbs: Object.values(roomResultProbs[Number(existingRoom)]),
             highWns: highestWinners.map(e => {
                 const highWinsObj = { userId: `${e.userId[0]}***${e.userId.slice(-1)}`, winAmt: e.winAmt, image: e.image };
                 return highWinsObj
@@ -171,8 +171,8 @@ export const reconnect = async (io: Server, socket: Socket, playerDetails: Final
             eventEmitter(socket, 'rn', { message: 'redirected to existing room', roomId: existingRoom, halls: getRooms() });
             setTimeout(() => {
                 eventEmitter(socket, 'rmSts', {
-                    historyData: roomWiseHistory[Number(existingRoom)].filter((_, index) => index < 22),
-                    colorProbs: Object.values(roomColorProbs[Number(existingRoom)]),
+                    historyData: roomWiseHistory[Number(existingRoom)],
+                    resultProbs: Object.values(roomResultProbs[Number(existingRoom)]),
                     highWns: highestWinners.map(e => {
                         const highWinsObj = { userId: `${e.userId[0]}***${e.userId.slice(-1)}`, winAmt: e.winAmt, image: e.image };
                         return highWinsObj
@@ -240,7 +240,7 @@ export const placeBet = async (socket: Socket, betData: BetReqData) => {
             return;
         };
 
-        if (userBets.length > 10) {
+        if (userBets.length > 3) {
             logEventResponse({ betData, ...parsedPlayerDetails }, 'Maximum number of bets exceeded', 'bet');
             eventEmitter(socket, 'betError', { message: 'Invalid Bet' });
             return;
@@ -250,29 +250,15 @@ export const placeBet = async (socket: Socket, betData: BetReqData) => {
 
             const { chip, btAmt } = bet;
             ttlBtAmt += btAmt;
-            const chips = chip.split('-').map(Number);
 
-            if (chips.length === 1) {
-                const singleChip = chips[0];
-                if ((!numberChips.includes(singleChip) && (btAmt < roomData.clrMin || btAmt > roomData.clrMax))) {
-                    isBetInvalid = true;
-                    break;
-                };
-            }
+            if (!chip || !allowedChips.includes((chip))) { isBetInvalid = true; break; }
 
-            if (chips.length === 2) {
-                chips.map((e: number) => {
-                    if (!numberChips.includes(e)) {
-                        isBetInvalid = true;
-                    }
-                });
-                if (btAmt < roomData.cmbMin || btAmt > roomData.cmbMax) {
-                    isBetInvalid = true;
-                    break;
-                }
-            }
+            if ((btAmt < roomData.min || btAmt > roomData.max)) {
+                isBetInvalid = true;
+                break;
+            };
 
-            if (chips.length > 2) { isBetInvalid = true; break; }
+
         };
 
         if (ttlBtAmt > Number(MAX_BET_AMOUNT)) {
@@ -337,12 +323,12 @@ export const settleBet = async (io: IOServer, result: GameResult, roomId: number
         const settlements: SingleBetObject[] = [];
 
         for (const betData of bets) {
-            const { bet_id, socket_id, game_id, txn_id, userBets, ip, token, totalBetAmt, image, lobby_id, user_id, operatorId } = betData;
+            const { bet_id, socket_id, roomId, game_id, txn_id, userBets, ip, token, totalBetAmt, image, lobby_id, user_id, operatorId } = betData;
             const socket = io.sockets.sockets.get(socket_id);
             let finalAmount = 0;
             const betResults: BetResult[] = [];
             userBets?.forEach(({ btAmt, chip }) => {
-                const roundResult = getBetResult(btAmt, chip, result, roomId);
+                const roundResult = getBetResult(btAmt, chip, result.winner, roomId);
                 betResults.push(roundResult);
                 if (roundResult.mult > 0) {
                     finalAmount += roundResult.winAmt;

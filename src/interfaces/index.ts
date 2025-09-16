@@ -111,7 +111,6 @@ export interface LobbyInsertData {
     end_delay: number;
     result: GameResult;
     time?: Date;
-    bonusedRes: string[]
 };
 
 export interface SingleBetObject {
@@ -122,7 +121,7 @@ export interface SingleBetObject {
     image: number;
     betAmount: number;
     userBets: BetResult[];
-    result: number[];
+    result: GameResult;
     roomId: number;
     max_mult?: number;
     winAmount?: string | number;
@@ -176,7 +175,7 @@ export interface WinningDetails {
 }
 
 export interface ReqData {
-    chip: string;
+    chip: number;
     btAmt: number;
 };
 
@@ -186,7 +185,7 @@ export interface BetReqData {
 };
 
 export type BetResult = {
-    chip: string;
+    chip: number;
     btAmt: number;
     winAmt: number;
     mult: number;
@@ -195,7 +194,7 @@ export type BetResult = {
 };
 
 export interface UsersBet {
-    chip: string;
+    chip: number;
     btAmt: number;
 };
 
