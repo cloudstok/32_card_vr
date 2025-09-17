@@ -253,7 +253,7 @@ export const placeBet = async (socket: Socket, betData: BetReqData) => {
 
             if (!chip || !allowedChips.includes((chip))) { isBetInvalid = true; break; }
 
-            if ((btAmt < roomData.min || btAmt > roomData.max)) {
+            if (btAmt < roomData.min || btAmt > roomData.max || btAmt > roomData[`chip${chip}Max`]) {
                 isBetInvalid = true;
                 break;
             };

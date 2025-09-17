@@ -86,6 +86,10 @@ const roomDetails: SingleRoomDetail[] = [
         chips: [50, 100, 200, 300, 500, 750],
         min: 50,
         max: 1473,
+        chip8Max: 80,
+        chip9Max: 196,
+        chip10Max: 408,
+        chip11Max: 869,
         plCnt: 0
     },
     {
@@ -93,6 +97,10 @@ const roomDetails: SingleRoomDetail[] = [
         chips: [100, 200, 300, 500, 750, 1000],
         min: 100,
         max: 3683,
+        chip8Max: 200,
+        chip9Max: 490,
+        chip10Max: 1020,
+        chip11Max: 2173,
         plCnt: 0
     },
     {
@@ -100,6 +108,10 @@ const roomDetails: SingleRoomDetail[] = [
         chips: [500, 750, 1000, 2000, 3000, 5000],
         min: 500,
         max: 14730,
+        chip8Max: 800,
+        chip9Max: 1960,
+        chip10Max: 4081,
+        chip11Max: 8695,
         plCnt: 0
     },
     {
@@ -107,6 +119,10 @@ const roomDetails: SingleRoomDetail[] = [
         chips: [1000, 2000, 3000, 5000, 7500, 10000],
         min: 1000,
         max: 36840,
+        chip8Max: 2000,
+        chip9Max: 4901,
+        chip10Max: 10200,
+        chip11Max: 21730,
         plCnt: 0
     }
 ];
@@ -152,7 +168,7 @@ export function getNumberPercentages(data: number[]) {
     }
 
     const percentages: { [key: number]: number } = {};
-    for (let i = 1; i <= Object.keys(count).length; i++) {
+    for (let i = 8; i <= 11; i++) {
         percentages[i] = total > 0 ? (count[i] / total) * 100 : 0;
     }
 

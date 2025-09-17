@@ -247,7 +247,12 @@ export interface SingleRoomDetail {
     chips: number[];
     min: number;
     max: number;
+    chip8Max: number;
+    chip9Max: number;
+    chip10Max: number;
+    chip11Max: number;
     plCnt: number;
+    [key: string]: any;
 };
 
 export type Suit = 'H' | 'D' | 'C' | 'S';

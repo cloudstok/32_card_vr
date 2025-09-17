@@ -116,46 +116,53 @@ const initLobby = async (io: IOServer, roomId: number): Promise<void> => {
     io.to(`${roomId}`).emit('message', { eventName: 'bnDtl', data: bonus });
     await sleep(1000);
 
-    const dynamicData: GameResult = {
-        cards: { 8: [], 9: [], 10: [], 11: [] },
-        roundWisePoints: { 8: [0], 9: [0], 10: [0], 11: [0] },
-        winner: null
+    // const dynamicData: GameResult = {
+    //     cards: { 8: [], 9: [], 10: [], 11: [] },
+    //     roundWisePoints: { 8: [0], 9: [0], 10: [0], 11: [0] },
+    //     winner: null
+    // }
+
+    // const playerIds = Object.keys(result.cards);
+    // const maxRounds = Math.max(...Object.values(result.cards).map(cards => cards.length));
+    // let actions = [];
+
+    // for (let i = 0; i < maxRounds; i++) {
+    //     for (let playerId of playerIds) {
+    //         const card = result.cards[playerId][i];
+    //         const point = result.roundWisePoints[playerId][i];
+    //         if (card !== undefined) {
+    //             actions.push(async () => {
+    //                 dynamicData.cards[playerId].push(card);
+    //                 io.to(`${roomId}`).emit('message', { eventName: 'card', data: { message: `${lobbyId}:${JSON.stringify(dynamicData)}:RESULT` } });
+    //                 dynamicData.roundWisePoints[playerId][0] += point;
+    //                 await sleep(1000);
+    //                 io.to(`${roomId}`).emit('message', { eventName: 'card', data: { message: `${lobbyId}:${JSON.stringify(dynamicData)}:RESULT` } });
+    //             });
+    //         }
+    //     }
+    // };
+
+    // const runActionsSequentially = async () => {
+    //     for (let index = 0; index < actions.length; index++) {
+    //         const action = actions[index];
+    //         action();
+    //         await sleep(2000);
+
+    //         if (index === actions.length - 1) {
+    //             dynamicData.winner = result.winner;
+    //             io.to(`${roomId}`).emit('message', { eventName: 'card', data: { message: `${lobbyId}:${JSON.stringify(dynamicData)}:RESULT` } });
+    //         }
+    //     }
+    // };
+
+    // await runActionsSequentially();
+    const resultCardsLen = Object.values(result.cards).flat().length;
+    const timer = (3.7 * resultCardsLen) + 2;
+
+    for (let w = 1; w <= timer; w++) {
+        io.to(`${roomId}`).emit('message', { eventName: "cards", data: { message: `${lobbyId}:${w}:${JSON.stringify(result)}:RESULT` } });
+        await sleep(1000);
     }
-
-    const playerIds = Object.keys(result.cards);
-    const maxRounds = Math.max(...Object.values(result.cards).map(cards => cards.length));
-    let actions = [];
-
-    for (let i = 0; i < maxRounds; i++) {
-        for (let playerId of playerIds) {
-            const card = result.cards[playerId][i];
-            const point = result.roundWisePoints[playerId][i];
-            if (card !== undefined) {
-                actions.push(async () => {
-                    dynamicData.cards[playerId].push(card);
-                    io.to(`${roomId}`).emit('cards', `${lobbyId}:${JSON.stringify(dynamicData)}:RESULT`);
-                    dynamicData.roundWisePoints[playerId][0] += point;
-                    await sleep(1000);
-                    io.to(`${roomId}`).emit('cards', `${lobbyId}:${JSON.stringify(dynamicData)}:RESULT`);
-                });
-            }
-        }
-    };
-
-    const runActionsSequentially = async () => {
-        for (let index = 0; index < actions.length; index++) {
-            const action = actions[index];
-            action();
-            await sleep(2000);
-
-            if (index === actions.length - 1) {
-                dynamicData.winner = result.winner;
-                io.to(`${roomId}`).emit('cards', `${lobbyId}:${JSON.stringify(dynamicData)}:RESULT`);
-            }
-        }
-    };
-
-    await runActionsSequentially();
 
     await settleBet(io, result, roomId);
 
