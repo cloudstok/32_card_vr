@@ -160,7 +160,7 @@ const initLobby = async (io: IOServer, roomId: number): Promise<void> => {
     const timer = (3.7 * resultCardsLen) + 2;
 
     for (let w = 1; w <= timer; w++) {
-        io.to(`${roomId}`).emit('message', { eventName: "cards", data: { message: `${lobbyId}:${w}:${JSON.stringify(result)}:RESULT` } });
+        io.to(`${roomId}`).emit('message', { eventName: "cards", data: { message: `${lobbyId}:${w}-${timer}:${JSON.stringify(result)}:RESULT` } });
         await sleep(1000);
     }
 
